@@ -370,6 +370,12 @@ export default function App() {
           categories={currentEvent.categories}
           onConfirm={handleExtractCookies} 
           onCancel={() => { setTrayImage(null); setDetectedBoxes([]); }} 
+          onAddCategory={(name) => {
+             updateCurrentEvent(prev => ({
+                ...prev, 
+                categories: [...prev.categories, { id: `cat-${Date.now()}`, name }]
+             }));
+          }}
         />
       );
     }

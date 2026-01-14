@@ -8,23 +8,37 @@ interface CropReviewProps {
   categories: Category[];
   onConfirm: (croppedImages: string[], defaultCategoryId: string | null) => void;
   onCancel: () => void;
+  onAddCategory: (name: string) => void;
 }
 
 type DragMode = 'none' | 'move' | 'resize';
 type HandlePosition = 'nw' | 'ne' | 'sw' | 'se';
 
-export const CropReview: React.FC<CropReviewProps> = ({ originalImage, detectedBoxes, categories, onConfirm, onCancel }) => {
+export const CropReview: React.FC<CropReviewProps> = ({ originalImage, detectedBoxes, categories, onConfirm, onCancel, onAddCategory }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   
   const [boxes, setBoxes] = useState<BoundingBox[]>(detectedBoxes);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [newCategoryName, setNewCategoryName] = useState('');
   
   const [dragMode, setDragMode] = useState<DragMode>('none');
   const [dragHandle, setDragHandle] = useState<HandlePosition | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  // Track category length to auto-select new ones
+  const prevCategoriesLen = useRef(categories.length);
+
+  useEffect(() => {
+    if (categories.length > prevCategoriesLen.current) {
+        // A new category was added, likely the last one. Auto-select it.
+        const newCat = categories[categories.length - 1];
+        if (newCat) setSelectedCategoryId(newCat.id);
+    }
+    prevCategoriesLen.current = categories.length;
+  }, [categories]);
 
   // Initialize boxes from prop, but only on mount or if prop changes significantly
   useEffect(() => {
@@ -268,6 +282,13 @@ export const CropReview: React.FC<CropReviewProps> = ({ originalImage, detectedB
     setSelectedIndex(null);
   };
 
+  const handleCreateCategory = () => {
+    if (newCategoryName.trim()) {
+      onAddCategory(newCategoryName.trim());
+      setNewCategoryName('');
+    }
+  };
+
   const handleProcess = () => {
     const img = imgRef.current;
     if (!img) return;
@@ -329,20 +350,39 @@ export const CropReview: React.FC<CropReviewProps> = ({ originalImage, detectedB
         />
       </div>
 
-      <div className="w-full max-w-md bg-cream dark:bg-gray-700/50 p-4 rounded-lg flex flex-col gap-2">
-        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">
-          Assign all to Category (Optional):
-        </label>
-        <select 
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          value={selectedCategoryId}
-          onChange={(e) => setSelectedCategoryId(e.target.value)}
-        >
-          <option value="">-- No Category --</option>
-          {categories.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+      <div className="w-full max-w-md bg-cream dark:bg-gray-700/50 p-4 rounded-lg flex flex-col gap-3">
+        <div>
+          <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 block">
+            Assign all to Category (Optional):
+          </label>
+          <select 
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-holly outline-none"
+            value={selectedCategoryId}
+            onChange={(e) => setSelectedCategoryId(e.target.value)}
+          >
+            <option value="">-- No Category --</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="pt-3 border-t border-gray-300 dark:border-gray-600">
+           <label className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wide">
+             Or Create New Category:
+           </label>
+           <div className="flex gap-2">
+             <input 
+               type="text" 
+               value={newCategoryName}
+               onChange={(e) => setNewCategoryName(e.target.value)}
+               placeholder="New Category Name..."
+               className="flex-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-holly outline-none"
+               onKeyDown={(e) => e.key === 'Enter' && handleCreateCategory()}
+             />
+             <Button size="sm" onClick={handleCreateCategory} disabled={!newCategoryName.trim()}>Add</Button>
+           </div>
+        </div>
       </div>
 
       <div className="flex gap-4">
