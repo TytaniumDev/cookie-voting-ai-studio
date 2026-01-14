@@ -1,0 +1,5 @@
+{
+  "name": "Cookie Voting",
+  "description": "A festive Christmas cookie voting app powered by AI. Admin can upload tray photos, auto-crop cookies using Gemini, and let friends vote blindly on the best decorations.",
+  "requestFramePermissions": []
+}
